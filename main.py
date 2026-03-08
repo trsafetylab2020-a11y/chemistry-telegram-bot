@@ -11,7 +11,7 @@ ADMIN_USERS = [123456789]  # ضع معرف Telegram الخاص بك هنا
 # قائمة الطلاب المدفوعين (للفصول المقفلة)
 PAID_USERS = []
 
-# ======= دروس الفصل الأول (شرح شامل مثل الكتاب + أمثلة محلولة) =======
+# ======= دروس الفصل الأول (شرح شامل + أمثلة محلولة) =======
 LESSONS_CHAPTER1 = {
     "lesson1": {
         "title": "تركيب الذرة",
@@ -195,6 +195,23 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     user_id = query.from_user.id
 
+    # العودة للفصول
+    if query.data == 'start_menu':
+        keyboard = [
+            [InlineKeyboardButton("📘 الفصل الأول (مجاني)", callback_data='chapter1')],
+            [InlineKeyboardButton("🔒 الفصل الثاني", callback_data='chapter2')],
+            [InlineKeyboardButton("🔒 الفصل الثالث", callback_data='chapter3')],
+            [InlineKeyboardButton("🔒 الفصل الرابع", callback_data='chapter4')],
+            [InlineKeyboardButton("🔒 الفصل الخامس", callback_data='chapter5')],
+            [InlineKeyboardButton("🔒 الفصل السادس", callback_data='chapter6')],
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            "اهلا بك في منصة الكيمياء السادس العلمي\nاختر الفصل الذي تريد:", 
+            reply_markup=reply_markup
+        )
+        return
+
     # الفصل الأول مجاني
     if query.data == 'chapter1':
         keyboard = [
@@ -208,17 +225,24 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=reply_markup
         )
 
-    # عرض محتوى الدروس
+    # عرض محتوى الدروس مع أزرار العودة
     elif query.data.startswith("lesson"):
         lesson = LESSONS_CHAPTER1.get(query.data)
         if lesson:
             content = f"📖 {lesson['title']}\n\n{lesson['content']}"
+            # تقسيم المحتوى إذا كان كبير
             if len(content) > 4000:
                 chunks = [content[i:i+4000] for i in range(0, len(content), 4000)]
                 for chunk in chunks:
                     await query.message.reply_text(chunk)
             else:
-                await query.edit_message_text(content)
+                # أزرار العودة
+                keyboard = [
+                    [InlineKeyboardButton("↩ العودة لقائمة الدروس", callback_data='chapter1')],
+                    [InlineKeyboardButton("🏠 العودة للفصول", callback_data='start_menu')]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await query.edit_message_text(content, reply_markup=reply_markup)
 
     # اختبار الفصل الأول
     elif query.data == 'test_chapter1':
