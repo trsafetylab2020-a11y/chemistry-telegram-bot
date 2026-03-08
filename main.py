@@ -11,7 +11,7 @@ ADMIN_USERS = [123456789]  # ضع معرف Telegram الخاص بك هنا
 # قائمة الطلاب المدفوعين (للفصول المقفلة)
 PAID_USERS = []
 
-# دروس الفصل الأول
+# ======= دروس الفصل الأول =======
 LESSONS_CHAPTER1 = {
     "lesson1": {
         "title": "تركيب الذرة",
@@ -54,7 +54,7 @@ LESSONS_CHAPTER1 = {
     }
 }
 
-# أسئلة وزارية للفصل الأول 2020‑2026
+# ======= أسئلة وزارية للفصل الأول (2020-2026) =======
 QUESTIONS_CHAPTER1 = [
     {"question": "ما المقصود بالعدد الذري؟",
      "options": ["عدد النيوترونات", "عدد البروتونات", "عدد المدارات", "عدد الإلكترونات فقط"],
@@ -85,7 +85,7 @@ QUESTIONS_CHAPTER1 = [
      "answer": "النيوترون", "year": 2022},
 ]
 
-# دالة start تعرض رسالة ترحيبية مع أزرار الفصول الستة
+# ======= دالة start لعرض الفصول =======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("📘 الفصل الأول (مجاني)", callback_data='chapter1')],
@@ -101,24 +101,30 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=reply_markup
     )
 
-# دالة لمعالجة الضغط على أزرار الفصول والدروس والاختبارات
+# ======= دالة button لمعالجة الضغط =======
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     user_id = query.from_user.id
 
-    # الفصل الأول مجاني
+    # ===== الفصل الأول مجاني =====
     if query.data == 'chapter1':
-        keyboard = [[InlineKeyboardButton(lesson["title"], callback_data=key)]
-                    for key, lesson in LESSONS_CHAPTER1.items()]
+        keyboard = [
+            [InlineKeyboardButton(lesson["title"], callback_data=key)]
+            for key, lesson in LESSONS_CHAPTER1.items()
+        ]
         keyboard.append([InlineKeyboardButton("📝 اختبار الفصل", callback_data='test_chapter1')])
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.edit_message_text("📘 الفصل الأول\nاختر الدرس أو الاختبار:", reply_markup=reply_markup)
+        await query.edit_message_text(
+            "📘 الفصل الأول\nاختر الدرس أو الاختبار:", 
+            reply_markup=reply_markup
+        )
 
     # عرض محتوى الدروس
-    elif query.data in LESSONS_CHAPTER1:
-        lesson = LESSONS_CHAPTER1[query.data]
-        await query.edit_message_text(f"{lesson['content']}")
+    elif query.data.startswith("lesson"):
+        lesson = LESSONS_CHAPTER1.get(query.data)
+        if lesson:
+            await query.edit_message_text(f"📖 {lesson['title']}\n\n{lesson['content']}")
 
     # اختبار الفصل الأول
     elif query.data == 'test_chapter1':
@@ -139,10 +145,8 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup = InlineKeyboardMarkup(keyboard)
             await query.edit_message_text("🔒 هذا الفصل متاح بعد الاشتراك", reply_markup=reply_markup)
 
-# إنشاء البوت وإضافة الهاندلر للأوامر والأزرار
+# ===== إنشاء البوت وتشغيله =====
 app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(button))
-
-# تشغيل البوت
 app.run_polling()
