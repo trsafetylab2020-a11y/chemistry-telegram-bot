@@ -4,66 +4,64 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 
 TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 
-# حساب الادمن (انت)
-ADMIN_USERS = [671598385]
+ADMIN = 671598385
 
-# المستخدمين المشتركين
-PAID_USERS = []
+paid_users = []
+scores = {}
 
-# رابط الدفع
-PAYMENT_TEXT = """
-💳 الاشتراك الكامل
+KI_CARD = "5556960115150247"
 
-فتح جميع فصول الكيمياء + الاختبارات + الملازم
 
-السعر: 25,000 دينار
-
-الدفع عبر كي كارد:
-
-5556960115150247
-
-بعد التحويل أرسل صورة التحويل إلى الإدارة.
-"""
-
+# ===============================
 # القائمة الرئيسية
+# ===============================
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = [
 
-        [InlineKeyboardButton("📘 الفصل الأول (مجاني)", callback_data="chapter1")],
-        [InlineKeyboardButton("🔒 الفصل الثاني", callback_data="chapter2")],
-        [InlineKeyboardButton("🔒 الفصل الثالث", callback_data="chapter3")],
-        [InlineKeyboardButton("🔒 الفصل الرابع", callback_data="chapter4")],
-        [InlineKeyboardButton("🔒 الفصل الخامس", callback_data="chapter5")],
-        [InlineKeyboardButton("🔒 الفصل السادس", callback_data="chapter6")],
+        [InlineKeyboardButton("📘 الفصل الأول", callback_data="ch1")],
+        [InlineKeyboardButton("🔒 الفصل الثاني", callback_data="locked")],
+        [InlineKeyboardButton("🔒 الفصل الثالث", callback_data="locked")],
+        [InlineKeyboardButton("🔒 الفصل الرابع", callback_data="locked")],
+        [InlineKeyboardButton("🔒 الفصل الخامس", callback_data="locked")],
+        [InlineKeyboardButton("🔒 الفصل السادس", callback_data="locked")],
 
-        [InlineKeyboardButton("📚 مكتبة الملازم", callback_data="library")],
         [InlineKeyboardButton("🎥 فيديوهات الشرح", callback_data="videos")],
+        [InlineKeyboardButton("📚 مكتبة الملازم", callback_data="library")],
+        [InlineKeyboardButton("🧠 الاختبارات", callback_data="tests")],
+        [InlineKeyboardButton("📊 درجاتي", callback_data="myscore")],
         [InlineKeyboardButton("💳 الاشتراك", callback_data="subscribe")]
 
     ]
 
     await update.message.reply_text(
-        "👋 أهلاً بك في منصة كيمياء السادس العلمي\nاختر ما تريد:",
+        "📚 منصة كيمياء السادس العلمي\nاختر من القائمة:",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
 
-async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ===============================
+# الأزرار
+# ===============================
+
+async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     query = update.callback_query
+    user = query.from_user.id
     await query.answer()
 
+
+# ===============================
 # الفصل الاول
-    if query.data == "chapter1":
+# ===============================
+
+    if query.data == "ch1":
 
         keyboard = [
 
-            [InlineKeyboardButton("⚛️ تركيب الذرة", callback_data="lesson1")],
-            [InlineKeyboardButton("📊 الجدول الدوري", callback_data="lesson2")],
-            [InlineKeyboardButton("🔗 الروابط الكيميائية", callback_data="lesson3")],
-            [InlineKeyboardButton("🧪 العناصر والمجموعات", callback_data="lesson4")],
-            [InlineKeyboardButton("📈 الخواص الكيميائية", callback_data="lesson5")],
+            [InlineKeyboardButton("⚛️ تركيب الذرة", callback_data="atom")],
+            [InlineKeyboardButton("📊 الجدول الدوري", callback_data="periodic")],
             [InlineKeyboardButton("🧠 اختبار الفصل", callback_data="test1")],
 
             [InlineKeyboardButton("⬅️ رجوع", callback_data="back")]
@@ -71,25 +69,27 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
 
         await query.edit_message_text(
-            "📘 الفصل الأول\nاختر الدرس:",
+            "📘 الفصل الأول",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
-# مثال شرح درس
-    elif query.data == "lesson1":
+
+# ===============================
+# درس الذرة
+# ===============================
+
+    elif query.data == "atom":
 
         text = """
 ⚛️ تركيب الذرة
 
-الذرة هي أصغر جزء من العنصر يحتفظ بخواصه الكيميائية.
+الذرة أصغر جزء من العنصر يحتفظ بخواصه الكيميائية.
 
 تتكون الذرة من:
 
-1- البروتونات (موجبة الشحنة)
-2- النيوترونات (متعادلة)
-3- الالكترونات (سالبة الشحنة)
-
-توجد البروتونات والنيوترونات في النواة بينما تدور الالكترونات في مستويات طاقة حول النواة.
+• بروتونات موجبة
+• نيوترونات متعادلة
+• إلكترونات سالبة
 
 العدد الذري = عدد البروتونات
 العدد الكتلي = بروتونات + نيوترونات
@@ -97,9 +97,25 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         keyboard = [
 
-            [InlineKeyboardButton("🎥 فيديو الشرح", url="https://youtube.com")],
-            [InlineKeyboardButton("📚 مكتبة الملازم", callback_data="library")],
-            [InlineKeyboardButton("⬅️ رجوع للدروس", callback_data="chapter1")]
+            [InlineKeyboardButton(
+                "🎥 فيديو الشرح",
+                url="https://www.youtube.com/watch?v=Nh9yq3cOVsY"
+            )],
+
+            [InlineKeyboardButton(
+                "📚 تحميل الملزمة",
+                callback_data="library"
+            )],
+
+            [InlineKeyboardButton(
+                "🧠 أسئلة وزارية",
+                callback_data="q_atom"
+            )],
+
+            [InlineKeyboardButton(
+                "⬅️ رجوع",
+                callback_data="ch1"
+            )]
 
         ]
 
@@ -108,34 +124,106 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
-# مكتبة الملازم
+
+# ===============================
+# سؤال وزاري
+# ===============================
+
+    elif query.data == "q_atom":
+
+        keyboard = [
+
+            [InlineKeyboardButton("عدد البروتونات", callback_data="a1")],
+            [InlineKeyboardButton("عدد الالكترونات", callback_data="a2")],
+            [InlineKeyboardButton("عدد النيوترونات", callback_data="a3")],
+            [InlineKeyboardButton("العدد الكتلي", callback_data="a4")]
+
+        ]
+
+        await query.edit_message_text(
+            "سؤال وزاري 2019\n\nما المقصود بالعدد الذري؟",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+
+    elif query.data == "a1":
+
+        scores[user] = scores.get(user,0)+1
+
+        await query.edit_message_text(
+            "✅ إجابة صحيحة\nالدرجة +1"
+        )
+
+    elif query.data in ["a2","a3","a4"]:
+
+        await query.edit_message_text(
+            "❌ إجابة خاطئة\nالإجابة الصحيحة: عدد البروتونات"
+        )
+
+
+# ===============================
+# الاختبار
+# ===============================
+
+    elif query.data == "test1":
+
+        keyboard = [
+
+            [InlineKeyboardButton("عدد البروتونات", callback_data="t1")],
+            [InlineKeyboardButton("عدد الالكترونات", callback_data="t2")],
+            [InlineKeyboardButton("عدد النيوترونات", callback_data="t3")]
+
+        ]
+
+        await query.edit_message_text(
+            "اختبار الفصل الأول\n\nما العدد الذري؟",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+
+    elif query.data == "t1":
+
+        scores[user] = scores.get(user,0)+1
+
+        await query.edit_message_text(
+            "✅ صحيح\nالدرجة +1"
+        )
+
+
+# ===============================
+# الدرجات
+# ===============================
+
+    elif query.data == "myscore":
+
+        s = scores.get(user,0)
+
+        await query.edit_message_text(
+            f"📊 مجموع درجاتك\n{s}"
+        )
+
+
+# ===============================
+# الملازم
+# ===============================
+
     elif query.data == "library":
 
         keyboard = [
 
             [InlineKeyboardButton(
-                "📄 ملزمة الشرح الجزء الأول",
+                "📄 ملزمة الجزء الأول",
                 url="https://drive.google.com/file/d/1vSK6SxkQRQl23aVR4RvZgpuUbHW0iUsT/view"
             )],
 
             [InlineKeyboardButton(
-                "📄 ملزمة الشرح الجزء الثاني",
+                "📄 ملزمة الجزء الثاني",
                 url="https://drive.google.com/file/d/1uxzE2l43iLopD81axegAEY0iFVCeEJmq/view"
             )],
 
             [InlineKeyboardButton(
-                "🧠 ملزمة الوزاريات",
+                "📄 الوزاريات",
                 url="https://drive.google.com/file/d/15Y1Ozad8T3FEuu_Wc3hpR97dxjSTxvbQ/view"
-            )],
-
-            [InlineKeyboardButton(
-                "📚 ملزمة إضافية",
-                url="https://drive.google.com/file/d/1DqK6u1FMKq1i8Gba-zutF7xMMkpkieDQ/view"
-            )],
-
-            [InlineKeyboardButton(
-                "🏫 ملزمة سنتر السادس",
-                url="https://drive.google.com/file/d/1ERWeEwlGCDniBuZJ3zOM3tONLLD_Xi5g/view"
             )],
 
             [InlineKeyboardButton("⬅️ رجوع", callback_data="back")]
@@ -147,42 +235,48 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
-# فيديوهات
-    elif query.data == "videos":
 
-        keyboard = [
-
-            [InlineKeyboardButton("🎥 شرح الفصل الأول", url="https://youtube.com")],
-            [InlineKeyboardButton("🎥 شرح الفصل الثاني", url="https://youtube.com")],
-            [InlineKeyboardButton("⬅️ رجوع", callback_data="back")]
-
-        ]
-
-        await query.edit_message_text(
-            "🎥 فيديوهات شرح الكيمياء",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-
+# ===============================
 # الاشتراك
+# ===============================
+
     elif query.data == "subscribe":
 
-        await query.edit_message_text(PAYMENT_TEXT)
+        await query.edit_message_text(
+f"""
+💳 الاشتراك الكامل
 
+السعر: 25,000 دينار
+
+الدفع عبر كي كارد:
+
+{KI_CARD}
+
+بعد التحويل أرسل صورة الدفع للإدارة.
+"""
+        )
+
+
+# ===============================
 # رجوع
+# ===============================
+
     elif query.data == "back":
 
         keyboard = [
 
-            [InlineKeyboardButton("📘 الفصل الأول (مجاني)", callback_data="chapter1")],
-            [InlineKeyboardButton("🔒 الفصل الثاني", callback_data="chapter2")],
-            [InlineKeyboardButton("🔒 الفصل الثالث", callback_data="chapter3")],
-            [InlineKeyboardButton("🔒 الفصل الرابع", callback_data="chapter4")],
-            [InlineKeyboardButton("🔒 الفصل الخامس", callback_data="chapter5")],
-            [InlineKeyboardButton("🔒 الفصل السادس", callback_data="chapter6")],
+        [InlineKeyboardButton("📘 الفصل الأول", callback_data="ch1")],
+        [InlineKeyboardButton("🔒 الفصل الثاني", callback_data="locked")],
+        [InlineKeyboardButton("🔒 الفصل الثالث", callback_data="locked")],
+        [InlineKeyboardButton("🔒 الفصل الرابع", callback_data="locked")],
+        [InlineKeyboardButton("🔒 الفصل الخامس", callback_data="locked")],
+        [InlineKeyboardButton("🔒 الفصل السادس", callback_data="locked")],
 
-            [InlineKeyboardButton("📚 مكتبة الملازم", callback_data="library")],
-            [InlineKeyboardButton("🎥 فيديوهات الشرح", callback_data="videos")],
-            [InlineKeyboardButton("💳 الاشتراك", callback_data="subscribe")]
+        [InlineKeyboardButton("🎥 فيديوهات الشرح", callback_data="videos")],
+        [InlineKeyboardButton("📚 مكتبة الملازم", callback_data="library")],
+        [InlineKeyboardButton("🧠 الاختبارات", callback_data="tests")],
+        [InlineKeyboardButton("📊 درجاتي", callback_data="myscore")],
+        [InlineKeyboardButton("💳 الاشتراك", callback_data="subscribe")]
 
         ]
 
@@ -192,9 +286,13 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+# ===============================
+# تشغيل البوت
+# ===============================
+
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
-app.add_handler(CallbackQueryHandler(button))
+app.add_handler(CallbackQueryHandler(buttons))
 
 app.run_polling()
