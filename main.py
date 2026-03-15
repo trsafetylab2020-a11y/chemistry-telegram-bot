@@ -1,227 +1,170 @@
-import os
-import random
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram import *
+from telegram.ext import *
 
-TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
+import config
+import database
+import lessons
+import chapter_tests
+import ministerial_questions
+import study_plan
+import teacher_ai
 
-scores = {}
-current_question = {}
+current_test = {}
 
-LESSONS = {
+async def start(update, context):
 
-"atom":{
-"title":"تركيب الذرة",
-"text":"""
-⚛️ تركيب الذرة
+    database.add_user(update.effective_user.id)
 
-الذرة هي أصغر جزء من العنصر يحتفظ بخواصه الكيميائية.
+    keyboard = [
 
-تتكون الذرة من:
-• بروتونات موجبة
-• نيوترونات متعادلة
-• إلكترونات سالبة
+        [InlineKeyboardButton("📘 الفصل الاول (مجاني)", callback_data="ch1")],
+        [InlineKeyboardButton("📘 الفصل الثاني", callback_data="ch2")],
+        [InlineKeyboardButton("📘 الفصل الثالث", callback_data="ch3")],
+        [InlineKeyboardButton("📘 الفصل الرابع", callback_data="ch4")],
+        [InlineKeyboardButton("📘 الفصل الخامس", callback_data="ch5")],
+        [InlineKeyboardButton("📘 الفصل السادس", callback_data="ch6")],
 
-العدد الذري:
-هو عدد البروتونات الموجودة في نواة الذرة.
+        [InlineKeyboardButton("🧠 اختبار وزاري", callback_data="wazari")],
+        [InlineKeyboardButton("📅 خطة مراجعة 30 يوم", callback_data="plan")],
+        [InlineKeyboardButton("❓ اسأل المدرس", callback_data="ask")]
 
-العدد الكتلي:
-هو مجموع عدد البروتونات والنيوترونات.
-""",
-"video":"https://www.youtube.com/watch?v=Nh9yq3cOVsY"
-},
-
-"periodic":{
-"title":"الجدول الدوري",
-"text":"""
-📊 الجدول الدوري
-
-ترتب العناصر في الجدول الدوري حسب العدد الذري تصاعدياً.
-
-يتكون الجدول الدوري من:
-• دورات أفقية
-• مجاميع عمودية
-
-العناصر في نفس المجموعة تتشابه في الخواص الكيميائية.
-""",
-"video":"https://www.youtube.com/watch?v=0RRVV4Diomg"
-}
-
-}
-
-QUESTIONS = [
-
-{
-"q":"ما المقصود بالعدد الذري؟",
-"options":[
-"عدد البروتونات",
-"عدد النيوترونات",
-"عدد الالكترونات",
-"العدد الكتلي"
-],
-"answer":0
-},
-
-{
-"q":"ما العدد الكتلي؟",
-"options":[
-"عدد البروتونات",
-"عدد البروتونات + النيوترونات",
-"عدد الالكترونات",
-"عدد المدارات"
-],
-"answer":1
-}
-
-]
-
-async def start(update:Update,context:ContextTypes.DEFAULT_TYPE):
-
-    keyboard=[
-
-[InlineKeyboardButton("📘 الفصل الأول",callback_data="chapter1")],
-[InlineKeyboardButton("🧠 الاختبار",callback_data="test")],
-[InlineKeyboardButton("📚 الملازم",callback_data="pdf")],
-[InlineKeyboardButton("📊 درجاتي",callback_data="score")]
-
-]
+    ]
 
     await update.message.reply_text(
-"📚 منصة كيمياء السادس العلمي",
-reply_markup=InlineKeyboardMarkup(keyboard)
-)
+        "مرحباً بك في بوت كيمياء السادس العلمي",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
-async def buttons(update:Update,context:ContextTypes.DEFAULT_TYPE):
+async def chapter(update, context):
 
-    query=update.callback_query
-    user=query.from_user.id
+    query = update.callback_query
     await query.answer()
 
-    if query.data=="chapter1":
+    ch = int(query.data[2])
 
-        keyboard=[
-
-[InlineKeyboardButton("⚛️ تركيب الذرة",callback_data="lesson_atom")],
-[InlineKeyboardButton("📊 الجدول الدوري",callback_data="lesson_periodic")],
-[InlineKeyboardButton("🧠 اختبار الفصل",callback_data="test")],
-[InlineKeyboardButton("⬅️ رجوع",callback_data="back")]
-
-]
+    if ch != 1 and not database.is_paid(query.from_user.id):
 
         await query.edit_message_text(
-"📘 الفصل الأول",
-reply_markup=InlineKeyboardMarkup(keyboard)
-)
+            f"هذا الفصل يحتاج اشتراك\nالسعر {config.PRICE} دينار"
+        )
+        return
 
-    elif query.data.startswith("lesson_"):
+    text = lessons.CHAPTERS[ch]
 
-        lesson=query.data.replace("lesson_","")
+    keyboard = [
 
-        data=LESSONS[lesson]
+        [InlineKeyboardButton("🧠 اختبار الفصل", callback_data=f"test{ch}")],
+        [InlineKeyboardButton("⬅️ رجوع", callback_data="back")]
 
-        keyboard=[
+    ]
 
-[InlineKeyboardButton("🎥 فيديو الشرح",url=data["video"])],
-[InlineKeyboardButton("🧠 اختبار",callback_data="test")],
-[InlineKeyboardButton("⬅️ رجوع",callback_data="chapter1")]
+    await query.edit_message_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
-]
+async def start_test(update, context):
 
-        await query.edit_message_text(
-data["text"],
-reply_markup=InlineKeyboardMarkup(keyboard)
-)
+    query = update.callback_query
+    await query.answer()
 
-    elif query.data=="test":
+    ch = int(query.data[-1])
 
-        q=random.choice(QUESTIONS)
+    questions = chapter_tests.TESTS[ch]
 
-        current_question[user]=q
+    current_test[query.from_user.id] = {
+        "q": questions,
+        "i": 0,
+        "score": 0
+    }
 
-        keyboard=[]
+    await send_question(query)
 
-        for i,opt in enumerate(q["options"]):
+async def send_question(query):
 
-            keyboard.append([InlineKeyboardButton(opt,callback_data=f"ans_{i}")])
+    data = current_test[query.from_user.id]
 
-        await query.edit_message_text(
-q["q"],
-reply_markup=InlineKeyboardMarkup(keyboard)
-)
+    if data["i"] >= len(data["q"]):
 
-    elif query.data.startswith("ans_"):
-
-        user_answer=int(query.data.split("_")[1])
-
-        q=current_question[user]
-
-        correct=q["answer"]
-
-        if user_answer==correct:
-
-            scores[user]=scores.get(user,0)+1
-
-            text="✅ إجابة صحيحة"
-
-        else:
-
-            text=f"❌ إجابة خاطئة\nالإجابة الصحيحة: {q['options'][correct]}"
-
-        keyboard=[
-
-[InlineKeyboardButton("➡️ السؤال التالي",callback_data="test")],
-[InlineKeyboardButton("⬅️ رجوع",callback_data="back")]
-
-]
+        score = data["score"]
 
         await query.edit_message_text(
-text,
-reply_markup=InlineKeyboardMarkup(keyboard)
-)
+            f"انتهى الاختبار\nدرجتك {score}/{len(data['q'])}"
+        )
 
-    elif query.data=="score":
+        return
 
-        s=scores.get(user,0)
+    q = data["q"][data["i"]]
 
-        await query.edit_message_text(
-f"📊 مجموع درجاتك: {s}"
-)
+    keyboard = []
 
-    elif query.data=="pdf":
+    for i, opt in enumerate(q["options"]):
+        keyboard.append([InlineKeyboardButton(opt, callback_data=f"a{i}")])
 
-        keyboard=[
+    await query.edit_message_text(
+        q["q"],
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
-[InlineKeyboardButton("📄 ملزمة الشرح",url="https://drive.google.com/file/d/1vSK6SxkQRQl23aVR4RvZgpuUbHW0iUsT/view")],
-[InlineKeyboardButton("📄 ملزمة ثانية",url="https://drive.google.com/file/d/1uxzE2l43iLopD81axegAEY0iFVCeEJmq/view")],
-[InlineKeyboardButton("📄 الوزاريات",url="https://drive.google.com/file/d/15Y1Ozad8T3FEuu_Wc3hpR97dxjSTxvbQ/view")],
-[InlineKeyboardButton("⬅️ رجوع",callback_data="back")]
+async def answer(update, context):
 
-]
+    query = update.callback_query
+    await query.answer()
 
-        await query.edit_message_text(
-"📚 مكتبة الملازم",
-reply_markup=InlineKeyboardMarkup(keyboard)
-)
+    user = query.from_user.id
 
-    elif query.data=="back":
+    data = current_test[user]
 
-        keyboard=[
+    q = data["q"][data["i"]]
 
-[InlineKeyboardButton("📘 الفصل الأول",callback_data="chapter1")],
-[InlineKeyboardButton("🧠 الاختبار",callback_data="test")],
-[InlineKeyboardButton("📚 الملازم",callback_data="pdf")],
-[InlineKeyboardButton("📊 درجاتي",callback_data="score")]
+    ans = int(query.data[1])
 
-]
+    if ans == q["answer"]:
+        data["score"] += 1
+        text = "✅ إجابة صحيحة"
+    else:
+        text = "❌ إجابة خاطئة"
 
-        await query.edit_message_text(
-"القائمة الرئيسية",
-reply_markup=InlineKeyboardMarkup(keyboard)
-)
+    data["i"] += 1
 
-app=ApplicationBuilder().token(TOKEN).build()
+    keyboard = [
+        [InlineKeyboardButton("➡️ التالي", callback_data="next")]
+    ]
 
-app.add_handler(CommandHandler("start",start))
-app.add_handler(CallbackQueryHandler(buttons))
+    await query.edit_message_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
-app.run_polling() 
+async def next_question(update, context):
+
+    query = update.callback_query
+    await query.answer()
+
+    await send_question(query)
+
+async def plan(update, context):
+
+    query = update.callback_query
+    await query.answer()
+
+    text = "\n".join(study_plan.PLAN)
+
+    await query.edit_message_text(text)
+
+async def ask_teacher(update, context):
+
+    text = teacher_ai.answer(update.message.text)
+
+    await update.message.reply_text(text)
+
+app = ApplicationBuilder().token(config.TOKEN).build()
+
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CallbackQueryHandler(chapter, pattern="ch"))
+app.add_handler(CallbackQueryHandler(start_test, pattern="test"))
+app.add_handler(CallbackQueryHandler(answer, pattern="a"))
+app.add_handler(CallbackQueryHandler(next_question, pattern="next"))
+app.add_handler(CallbackQueryHandler(plan, pattern="plan"))
+
+app.run_polling()
