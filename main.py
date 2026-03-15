@@ -5,13 +5,9 @@ from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandle
 
 TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 
-ADMIN_ID = 671598385
-KI_CARD = "5556960115150247"
-
 scores = {}
 current_question = {}
 
-# الدروس
 LESSONS = {
 
 "atom":{
@@ -19,16 +15,18 @@ LESSONS = {
 "text":"""
 ⚛️ تركيب الذرة
 
-الذرة أصغر جزء من العنصر يحتفظ بخواصه الكيميائية.
+الذرة هي أصغر جزء من العنصر يحتفظ بخواصه الكيميائية.
 
 تتكون الذرة من:
 • بروتونات موجبة
 • نيوترونات متعادلة
 • إلكترونات سالبة
 
-العدد الذري = عدد البروتونات
+العدد الذري:
+هو عدد البروتونات الموجودة في نواة الذرة.
 
-العدد الكتلي = عدد البروتونات + عدد النيوترونات
+العدد الكتلي:
+هو مجموع عدد البروتونات والنيوترونات.
 """,
 "video":"https://www.youtube.com/watch?v=Nh9yq3cOVsY"
 },
@@ -41,7 +39,6 @@ LESSONS = {
 ترتب العناصر في الجدول الدوري حسب العدد الذري تصاعدياً.
 
 يتكون الجدول الدوري من:
-
 • دورات أفقية
 • مجاميع عمودية
 
@@ -52,7 +49,6 @@ LESSONS = {
 
 }
 
-# الاسئلة
 QUESTIONS = [
 
 {
@@ -79,16 +75,14 @@ QUESTIONS = [
 
 ]
 
-# start
 async def start(update:Update,context:ContextTypes.DEFAULT_TYPE):
 
     keyboard=[
 
 [InlineKeyboardButton("📘 الفصل الأول",callback_data="chapter1")],
-[InlineKeyboardButton("📚 الملازم",callback_data="pdf")],
 [InlineKeyboardButton("🧠 الاختبار",callback_data="test")],
-[InlineKeyboardButton("📊 درجاتي",callback_data="score")],
-[InlineKeyboardButton("💳 الاشتراك",callback_data="sub")]
+[InlineKeyboardButton("📚 الملازم",callback_data="pdf")],
+[InlineKeyboardButton("📊 درجاتي",callback_data="score")]
 
 ]
 
@@ -97,15 +91,12 @@ async def start(update:Update,context:ContextTypes.DEFAULT_TYPE):
 reply_markup=InlineKeyboardMarkup(keyboard)
 )
 
-# الازرار
 async def buttons(update:Update,context:ContextTypes.DEFAULT_TYPE):
 
     query=update.callback_query
     user=query.from_user.id
-
     await query.answer()
 
-# الفصل الاول
     if query.data=="chapter1":
 
         keyboard=[
@@ -122,7 +113,6 @@ async def buttons(update:Update,context:ContextTypes.DEFAULT_TYPE):
 reply_markup=InlineKeyboardMarkup(keyboard)
 )
 
-# عرض الدرس
     elif query.data.startswith("lesson_"):
 
         lesson=query.data.replace("lesson_","")
@@ -142,7 +132,6 @@ data["text"],
 reply_markup=InlineKeyboardMarkup(keyboard)
 )
 
-# الاختبار
     elif query.data=="test":
 
         q=random.choice(QUESTIONS)
@@ -160,7 +149,6 @@ q["q"],
 reply_markup=InlineKeyboardMarkup(keyboard)
 )
 
-# الاجابة
     elif query.data.startswith("ans_"):
 
         user_answer=int(query.data.split("_")[1])
@@ -191,7 +179,6 @@ text,
 reply_markup=InlineKeyboardMarkup(keyboard)
 )
 
-# الدرجات
     elif query.data=="score":
 
         s=scores.get(user,0)
@@ -200,7 +187,6 @@ reply_markup=InlineKeyboardMarkup(keyboard)
 f"📊 مجموع درجاتك: {s}"
 )
 
-# الملازم
     elif query.data=="pdf":
 
         keyboard=[
@@ -217,31 +203,14 @@ f"📊 مجموع درجاتك: {s}"
 reply_markup=InlineKeyboardMarkup(keyboard)
 )
 
-# الاشتراك
-    elif query.data=="sub":
-
-        await query.edit_message_text(
-f"""
-💳 الاشتراك الكامل لجميع الفصول
-
-السعر: 25000 دينار
-
-الدفع عبر كي كارد:
-
-{KI_CARD}
-"""
-)
-
-# رجوع
     elif query.data=="back":
 
         keyboard=[
 
 [InlineKeyboardButton("📘 الفصل الأول",callback_data="chapter1")],
-[InlineKeyboardButton("📚 الملازم",callback_data="pdf")],
 [InlineKeyboardButton("🧠 الاختبار",callback_data="test")],
-[InlineKeyboardButton("📊 درجاتي",callback_data="score")],
-[InlineKeyboardButton("💳 الاشتراك",callback_data="sub")]
+[InlineKeyboardButton("📚 الملازم",callback_data="pdf")],
+[InlineKeyboardButton("📊 درجاتي",callback_data="score")]
 
 ]
 
