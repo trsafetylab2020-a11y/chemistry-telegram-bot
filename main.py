@@ -167,4 +167,4 @@ app.add_handler(CallbackQueryHandler(answer, pattern="a"))
 app.add_handler(CallbackQueryHandler(next_question, pattern="next"))
 app.add_handler(CallbackQueryHandler(plan, pattern="plan"))
 
-app.run_polling()
+app.run_polling() 
